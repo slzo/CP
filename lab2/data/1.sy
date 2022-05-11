@@ -1,6 +1,6 @@
 const int pad = 10, rew = 20, reowi = 40;
 
-int func(int a, int c[], int d[h + e]) {
+int func(int a, int c[], int d[][h + e]) {
     int a = 10, g, h, j;
     while (a <= 10 || b > 2 && a + b < c)
         a = a + 1;
