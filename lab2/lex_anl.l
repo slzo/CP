@@ -2,6 +2,7 @@
 %{
 #include <stdio.h>
 #include "gram_anl.tab.h"
+#include "Tree.h"
 int rownum = 1, colnum = 1; //记录当前检索位置的行和列号
 %}
 
@@ -37,22 +38,24 @@ Other {NO}|{NI}
 <INITIAL>{Annotation1} { colnum = 1; rownum++; }
 
 <INITIAL>{BType} { colnum+=yyleng;
+					yylval.node = Make1(yytext);
 					switch(*yytext) {
 						case 'i' :  return( INT );
 						case 'v' :  return( VOID );
 					}
 				}
 <INITIAL>{If} { colnum+=yyleng;
-					switch(*yytext) {
-						case 'i' :  return( IF );
-						case 'e' :  return( ELSE );
-					}
+				yylval.node = Make1(yytext);
+				switch(*yytext) {
+					case 'i' :  return( IF );
+					case 'e' :  return( ELSE );
 				}
-<INITIAL>main { colnum+=yyleng; return (MAIN); }
-<INITIAL>return { colnum+=yyleng; return (RETURN); }
-<INITIAL>const { colnum+=yyleng; return (CONST); }
+			}
+<INITIAL>return { colnum+=yyleng; yylval.node = Make1(yytext); return (RETURN); }
+<INITIAL>const { colnum+=yyleng; yylval.node= Make1(yytext); return (CONST); }
 
 <INITIAL>{While} { colnum+=yyleng;
+					yylval.node = Make1(yytext);
 					switch(*yytext) {
 						case 'w' :  return( WHILE );
 						case 'b' :  return( BREAK );
@@ -60,9 +63,11 @@ Other {NO}|{NI}
 					}
 				}
 <INITIAL>{One_OP} {	colnum+=yyleng;
+					yylval.node = Make1(yytext);
 					return *yytext;
 				}
 <INITIAL>{Two_OP} {colnum+=yyleng;
+					yylval.node = Make1(yytext);
 					switch(*yytext) {
 						case '&' :  return( AND );
 						case '|' :  return( OR );
@@ -72,16 +77,18 @@ Other {NO}|{NI}
 						case '>' :  return( GE );
 					}
 				}
-<INITIAL>{Number} { yylval.intval = atoi(yytext);
+<INITIAL>{Number} { int number = atoi(yytext);
 					colnum+=yyleng;
+					yylval.node = Make2(number);
 					return Number;
 					}
 <INITIAL>{Border} {	colnum+=yyleng;
+					yylval.node = Make1(yytext);
 					return *yytext;
 				}
 
-<INITIAL>{Identifier} { yylval.strval = yytext;
-						colnum+=yyleng;
+<INITIAL>{Identifier} { colnum+=yyleng;
+						yylval.node = Make3(yytext);
 						return ( ID );
 						}
 
