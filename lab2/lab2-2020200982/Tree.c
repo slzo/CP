@@ -26,17 +26,14 @@ Node* Make3( char* id) {
 	return node;
 }
 
-
-
-void Insert(Node* p, Node* c) {
+void Relate(Node* p, Node* c) {
 	p->child[p->c_n++] = c;
 	c->p = p;
 	return;
 }
 
-int Ifnode(Node* p, int th) {
-	char Key[32][10]={"int","void","if","else","while","break","continue","return","const","&&","||","==","!=","<=",">=","+","-","*","/","%","!",">","<","=","{","}","[","]","(",")",",",";"};
-	char id[]="ID", num[]="Number";
+int IfKey(Node* p, int th) {
+	char id[]="ID", num[]="Number", LR[]="{", RR[]="}", GT[]=">", GE[]=">=", LE[]="<=", LS[]="<";
 	if(!strcmp(p->type, id) ) {
 		fprintf(dot, "<f%d> %s", th, p->id);
 		return 1;
@@ -45,11 +42,33 @@ int Ifnode(Node* p, int th) {
 		fprintf(dot, "<f%d> %d", th, p->number);
 		return 1;
 	}
-	for(int i = 0; i < 32; i++)
-		if(!strcmp(p->type, Key[i])){
-				fprintf(dot, "<f%d> %s", th, Key[i]);
-				return 1;
-		}
+	if(!strcmp(p->type, LR) ) {
+		fprintf(dot, "<f%d> \\{", th);
+		return 1;
+	}
+	if(!strcmp(p->type, RR)) {
+		fprintf(dot, "<f%d> \\}", th);
+		return 1;
+	}
+	if(!strcmp(p->type, GT)) {
+		fprintf(dot, "<f%d> \\>", th);
+		return 1;
+	}
+	if(!strcmp(p->type, GE) ) {
+		fprintf(dot, "<f%d> \\>=", th);
+		return 1;
+	}
+	if(!strcmp(p->type, LE)) {
+		fprintf(dot, "<f%d> \\<=", th);
+		return 1;
+	}	if(!strcmp(p->type, LS)) {
+		fprintf(dot, "<f%d> \\<", th);
+		return 1;
+	}
+	if(!strcmp(p->type, LR) ) {
+		fprintf(dot, "<f%d> \\{", th);
+		return 1;
+	}
 	return 0;
 }
 
@@ -59,11 +78,11 @@ void DFS(Node* p, int n) {
 	p->nth=thn++;
 	for(int i = 0; i < p->c_n; i++)
 		DFS(p->child[i], i);
-	printf("%s %d\n", p->type, p->nth);
 	fprintf(dot, "node%d[label=\"",p->nth); //nodex[label="<fi> ....."]
 	for(int i = 0; i < p->c_n; i++) { 
-		if( !Ifnode(p->child[i], i) )
+		if( !IfKey(p->child[i], i) )
 			fprintf(dot, "<f%d> %s", i, p->child[i]->type);
+		if(i == p->c_n-1) break;
 		fprintf(dot, "|");
 	}
 	fprintf(dot, "\"];\n");
@@ -75,7 +94,7 @@ void Create(Node* p) {
 	dot=fopen("Tree.dot","w");
 	fprintf(dot, "digraph \" \"{\n"); //digraph " "{
 	fprintf(dot, "node [shape = record,height=.1]\n");
-	fprintf(dot, "node0[label=\"<f0>%s;\n", p->type);
+	fprintf(dot, "node0[label=\"<f0>%s\"];\n", p->type);
 	DFS(p, 0);
 	fprintf(dot,"}\n");
 	fclose(dot);

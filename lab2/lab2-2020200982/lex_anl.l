@@ -1,7 +1,6 @@
-%option noyywrap yylineno
 %{
 #include <stdio.h>
-#include "gram_anl.tab.h"
+#include "y.tab.h"
 #include "Tree.h"
 int rownum = 1, colnum = 1; //记录当前检索位置的行和列号
 %}
@@ -11,7 +10,6 @@ Dec [1-9][0-9]*|0
 Hex 0[x|X][1-9a-fA-F][0-9a-fA-F]*
 Oct 0[1-7][0-7]*
 Fl "."[1-9][0-9]*
-SN [1-9]{Fl}{0,1}[e|E][+-]*[0-9]+
 Bracket "("|"["|"{"|")"|"]"|"}"
 Notation ","|";"
 BType int|void
@@ -20,7 +18,6 @@ While while|break|continue
 One_OP "+"|"-"|"*"|"/"|"%"|"="|"<"|">"|"!"
 Two_OP "&&"|"||"|"=="|"!="|"<="|">="
 Identifier [a-zA-Z_][a-zA-Z0-9_]*
-Number {Dec}|{Hex}|{Oct}|{SN}
 Border {Bracket}|{Notation}
 Annotation1 "//".*\n
 NO [@#$:"?\`]|"^"|"."
@@ -77,11 +74,35 @@ Other {NO}|{NI}
 						case '>' :  return( GE );
 					}
 				}
-<INITIAL>{Number} { int number = atoi(yytext);
+<INITIAL>{Dec} { int number = atoi(yytext);
 					colnum+=yyleng;
 					yylval.node = Make2(number);
 					return Number;
 					}
+<INITIAL>{Hex} { int number;
+					for(int i = 2; i < strlen(yytext); i++) {
+						number*=16;
+						if(yytext[i]>='0' && yytext[i] <= '9')
+							number += (yytext[i]-'0');
+						if(yytext[i]>='a' && yytext[i] <= 'f')
+							number += (yytext[i]-'a'+10);
+						if(yytext[i]>='A' && yytext[i] <= 'F')
+							number += (yytext[i]-'A'+10);
+					}
+					colnum+=yyleng;
+					yylval.node = Make2(number);
+					return Number;
+					}
+<INITIAL>{Oct} { int number = 0;
+					for(int i = 1; i < strlen(yytext); i++) {
+						number*=8;
+						number += (yytext[i]-'0');
+					}
+					colnum+=yyleng;
+					yylval.node = Make2(number);
+					return Number;
+					}
+
 <INITIAL>{Border} {	colnum+=yyleng;
 					yylval.node = Make1(yytext);
 					return *yytext;
@@ -96,3 +117,6 @@ Other {NO}|{NI}
 <Annotation>. { colnum++; }
 <INITIAL>. {  colnum++; }
 %%
+int yywrap(){
+	return 1;
+}
