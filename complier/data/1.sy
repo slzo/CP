@@ -1,5 +1,5 @@
 // a + b problem
-
+#include <stdio.h>
 int main() {
     int a;
     int b;
@@ -7,4 +7,5 @@ int main() {
     scanf(b);
     int c = a + b;
     printf(c);
+    return 0;
 }
