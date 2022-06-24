@@ -1,12 +1,14 @@
-all: myanl
-myanl: y.tab.c lex.yy.c Tree.c
-	gcc y.tab.c lex.yy.c Tree.c -o myanl
+all: complier
+complier: lexer.cpp parser.cpp tree.cpp
+	g++ -g lexer.cpp parser.cpp tree.cpp -o complier
 
-y.tab.c y.tab.h: gram_anl.y
-	yacc -d gram_anl.y
+parser.cpp parser.h: parser.y
+	bison -o parser.cpp --defines=parser.h -v parser.y
 
-lex.yy.c: lex_anl.l
-	flex lex_anl.l
-.PYHONY: clean
+lexer.cpp: lexer.l
+	flex --noyywrap -o lexer.cpp lexer.l
+
+.PHONY:  clean
 clean:
-	-@ rm y.tab.c  y.tab.h lex.yy.c
+	rm -f lexer.cpp parser.cpp parser.h parser.output complier
+

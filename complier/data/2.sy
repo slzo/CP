@@ -1,5 +1,5 @@
 const int N = 3;
-int a[N][N * 2];
+int a[N][N*2];
 
 
 int f(int x) {
@@ -36,7 +36,7 @@ int main () {
         printf(i);
         i = i + 1;  
     }
-    int b[N][N * 2];
+    int b[3][6];
     i = 1;
     j = i + i;
     b[0][0] = i + j * 2;
