@@ -60,6 +60,8 @@ ConstDefs : ConstDef {$$ = new TreeNode(lineno, NODE_VARLIST); $$->Relate($1);}
 ConstDef : DeclIdentifier ASSIGN IntConst {
 				$$ = new TreeNode(lineno, NODE_OP);
 				$$->optype = OP_DECLASSIGN;
+				$$->int_val = $3->int_val;
+				$1->int_val = $3->int_val;
 				$$->Relate($1);
 				$$->Relate($3);
 			}
@@ -78,7 +80,7 @@ BasicType : INT {$$ = new TreeNode(lineno, NODE_TYPE); $$->type = TYPE_INT;}
 IntConst : INTEGER {$$ = new TreeNode(lineno, NODE_EXPR); $$->Relate($1); $$->int_val = $1->int_val; }
 ;
 
-LVal : Identifier {$$ = new TreeNode($1);}
+LVal : Identifier {$$ = new TreeNode($1); $$->int_val = $1->int_val; }
 	| ArrayIdentifier {
 		$$ = $1;
 		$$->child->type->visitDim = 0;
@@ -191,6 +193,7 @@ ArrayDeclIdentifier : DeclIdentifier LBRACKET Exp RBRACKET {
 
 DeclIdentifier : IDENTIFIER {
 					$$ = $1;
+					$1->int_val = $$->int_val;
 					$$->var_scope = presentScope;
 					$$->type = new Type(NOTYPE);
 					if (idList.count(make_pair($$->var_name, $$->var_scope)) != 0) {
@@ -233,6 +236,8 @@ VarDef : DeclIdentifier {$$ = $1;}
 		| DeclIdentifier ASSIGN Exp {
 				$$ = new TreeNode(lineno, NODE_OP);
 				$$->optype = OP_DECLASSIGN;
+				$$->int_val = $3->int_val;
+				$1->int_val = $3->int_val;
 				$$->Relate($1);
 				$$->Relate($3);
 			}
@@ -432,8 +437,32 @@ int yyerror(char const * message)
 	cout << "error: " << message << ", at line " << lineno << endl;
 	return 0;
 }
+
+void Init() {
+    int k = 4;
+    Scanf->lineno = -1;
+    Scanf->var_name = "scanf";
+    Scanf->var_scope = "1";
+    Scanf->type = new Type(COMPOSE_FUNCTION);
+    Scanf->type->retType = TYPE_VOID;
+    Scanf->type->paramType[Scanf->type->paramNum++] = TYPE_INT;
+    for (int i = 0; i < k;i++)
+        Scanf->type->paramType[Scanf->type->paramNum++] = TYPE_INT;
+    idNameList.insert(make_pair("scanf", "1"));
+    idList[make_pair("scanf", "1")] = Scanf;
+    Printf->lineno = -1;
+    Printf->var_name = "printf";
+    Printf->var_scope = "1";
+    Printf->type = new Type(COMPOSE_FUNCTION);
+    Printf->type->retType = TYPE_VOID;
+    Printf->type->paramType[Printf->type->paramNum++] = TYPE_INT;
+    for (int i = 0; i < k;i++)
+        Printf->type->paramType[Printf->type->paramNum++] = TYPE_INT;
+    idNameList.insert(make_pair("printf", "1"));
+    idList[make_pair("printf", "1")] = Printf;
+}
 int main() {
-    PushIO();
+    Init();
     yyparse();
     root->genCode();
     return 0;

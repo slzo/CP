@@ -164,8 +164,5 @@ struct TreeNode {
 	void get_label(); //为if_else while bool语句分配label
 	string getVarNameCode(TreeNode* p); //生成取值操作的汇编代码
 };
-void PushIO(); //将scanf/printf压入栈, 不用提前进行函数声明即可使用
-
-
-static TreeNode* nodeScanf = new TreeNode(0, NODE_VAR);
-static TreeNode* nodePrintf = new TreeNode(0, NODE_VAR);
+static TreeNode* Scanf = new TreeNode(0, NODE_VAR);
+static TreeNode* Printf = new TreeNode(0, NODE_VAR);

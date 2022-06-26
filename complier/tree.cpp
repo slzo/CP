@@ -108,11 +108,11 @@ void TreeNode::genCode() {
         pSize += this->child->type->paramType[0]->getSize(); //传入参数,只支持一个参数
         /*---------call, scanf printf特殊处理--------*/
         if(child->var_name == string("printf"))
-            cout << "\tcall\t" << "printf@PLT" << endl << "\taddq\t$" << pSize << ",%rsp" << endl;
+            cout << "\tcall\t" << "printf@PLT" << endl ;//<< "\taddq\t$" << pSize << ",%rsp" << endl;
         else if (child->var_name == string("scanf") )
-            cout << "\tcall\t" << "__isoc99_scanf@PLT" << endl << "\taddq\t$" << pSize << ",%rsp" << endl;
+            cout << "\tcall\t" << "__isoc99_scanf@PLT" << endl;// << "\taddq\t$" << pSize << ",%rsp" << endl;
         else
-            cout << "\tcall\t" << child->var_name << endl << "\taddq\t$" << pSize << ", %rsp" << endl;
+            cout << "\tcall\t" << child->var_name << endl;// << "\taddq\t$" << pSize << ", %rsp" << endl;
         break;
     case NODE_STMT:
         switch (stype)
@@ -183,9 +183,8 @@ void TreeNode::genCode() {
             cout << "\tjmp\t" << cycleStack[cycleStackTop]->label.next_label << endl;
             break;
         case STMT_RETURN:
-            if (p) {
+            if (p)
                 p->genCode();
-            }
             cout << "\tjmp\t" << pFunction->label.next_label << endl;
             break;
         case STMT_BLOCK:
@@ -312,9 +311,8 @@ void TreeNode::genCode() {
             p->sibling->genCode();
             if (p->nodeType == NODE_VAR)
                 cout << "\tmovl\t%eax, " << getVarNameCode(p) << endl;
-            else {  // 左值是数组
+            else {
                 cout << "\tpushq\t%rax" << endl;
-                // 计算偏移量到%rax
                 p->child->sibling->genCode();
                 cout << "\tpopq\t%rbx" << endl
                      << "\tmovl\t%ebx, " << getVarNameCode(p) << endl;
@@ -369,7 +367,6 @@ void TreeNode::genCode() {
                  << "\tmovl\t%edx, %eax" << endl;
             break;
         case OP_INDEX:
-            // 这里只生成下标运算在右值时的代码（即按下标取数值）
             p->sibling->genCode();
             cout << "\tmovq\t" << getVarNameCode(this) << ", %rax" << endl;
             break;
@@ -383,25 +380,22 @@ void TreeNode::genCode() {
 
 
 void TreeNode::gen_var_decl() {
-    if (nodeType == NODE_PROG) { // 根节点下只处理全局变量声明
+    if (nodeType == NODE_PROG) { //root: deal the extern var
         TreeNode *p = child;
         bool print_data = false;
         while(p) { // 发现了p为定义语句，LeftChild为类型，RightChild为声明表
             if (p->stype == STMT_DECL || p->stype == STMT_CONSTDECL) {
-                TreeNode* q = p->child->sibling->child; // q为变量表语句，可能为标识符或者赋值声明运算符
+                TreeNode* q = p->child->sibling->child;
                 while (q) {
-                    if (!print_data) {
-                        // 第一次遇到全局变量的时候输出
+                    if (!print_data) { // first: print the header
                         print_data = true;
                         cout << "\t.text" << endl
                             << "\t.data" << endl
                             << "\t.align\t4" << endl;
                     }
                     TreeNode *t = q;
-                    if (q->nodeType == NODE_OP && q->optype == OP_DECLASSIGN) {
+                    if (q->nodeType == NODE_OP && q->optype == OP_DECLASSIGN)
                         t = q->child;
-                    }
-                    // 遍历常变量列表
                     int varsize =  t->type->getSize();
                     if(t->type->dim > 0)
                         t->type->type = VALUE_ARRAY;
@@ -409,17 +403,17 @@ void TreeNode::gen_var_decl() {
                          << "\t.type\t" << t->var_name << ", @object" << endl
                          << "\t.size\t" << t->var_name << ", " << varsize << endl
                          << t->var_name << ":" << endl;
-                    if (q->nodeType == NODE_OP && q->optype == OP_DECLASSIGN) { // 声明时赋值
-                        if (t->type->dim == 0) // 单个值
+                    if (q->nodeType == NODE_OP && q->optype == OP_DECLASSIGN) { //with init
+                        if (t->type->dim == 0)
                             cout << "\t.long\t" << t->sibling->getVal() << endl;
-                        else  // 数组
+                        else
                             for (TreeNode *pe = t->sibling->child; pe != nullptr; pe = pe->sibling)
                                 cout << "\t.long\t" << 4 * pe->getVal() << endl;
                     }
-                    else { // 声明时未赋值，默认初始化值为0
-                        if (t->type->dim == 0)// 单个值
+                    else { //without init
+                        if (t->type->dim == 0)
                             cout << "\t.long\t0" << endl;
-                        else {  // 数组
+                        else {
                             int size = t->type->getSize();
                             cout << "\t.zero\t" << size << endl;
                         }
@@ -430,35 +424,27 @@ void TreeNode::gen_var_decl() {
             p = p->sibling;
         }
     }
-    else if (nodeType == NODE_STMT && stype == STMT_FUNCDECL) {
-        // 对于函数声明语句，递归查找局部变量声明
+    else if (nodeType == NODE_STMT && stype == STMT_FUNCDECL) { //function
         LocalVarList.clear();
         stackSize = -12;
         int paramSize = 8;
-        // 遍历参数定义列表
         TreeNode *p = child->sibling->sibling->child;
-        while (p) {
-            // 只能是基本数据类型，简便起见一律分配4字节
+        while (p) { // scan the param , 4b for one
             LocalVarList[p->child->sibling->var_scope + p->child->sibling->var_name] = paramSize;
             paramSize += 4;
             p = p->sibling;
         }
-
-        // 遍历代码段，查找函数内声明的局部变量
         p = child->sibling->sibling->sibling->child;
-        while (p) {
+        while (p) { //find local var in func
             p->gen_var_decl();
             p = p->sibling;
         }
 
     }
-    else if (nodeType == NODE_STMT && (stype == STMT_DECL || stype == STMT_CONSTDECL)) {
-        // 找到了局部变量定义
+    else if (nodeType == NODE_STMT && (stype == STMT_DECL || stype == STMT_CONSTDECL)) { //local var: only change the stack
         TreeNode* q = child->sibling->child;
         while (q) {
-            // 遍历常变量列表，指针类型视为8字节int, q为标识符或声明赋值运算符
             TreeNode *t = q;
-            // 声明时赋值
             if (q->nodeType == NODE_OP && q->optype == OP_DECLASSIGN)
                 t = q->child;
             int varsize = t->type->getSize();
@@ -467,8 +453,7 @@ void TreeNode::gen_var_decl() {
             q = q->sibling;
         }
     } 
-    else {
-        // 在函数定义语句块内部递归查找局部变量声明
+    else { //recursively
         TreeNode *p = child;
         while (p) {
             p->gen_var_decl();
@@ -566,28 +551,4 @@ string TreeNode::getVarNameCode(TreeNode* p) {
         }
     }
     return varCode;
-}
-
-void PushIO() {
-    int k = 4;
-    nodeScanf->lineno = -1;
-    nodeScanf->var_name = "scanf";
-    nodeScanf->var_scope = "1";
-    nodeScanf->type = new Type(COMPOSE_FUNCTION);
-    nodeScanf->type->retType = TYPE_VOID;
-    nodeScanf->type->paramType[nodeScanf->type->paramNum++] = TYPE_INT;
-    for (int i = 0; i < k;i++)
-        nodeScanf->type->paramType[nodeScanf->type->paramNum++] = TYPE_INT;
-    idNameList.insert(make_pair("scanf", "1"));
-    idList[make_pair("scanf", "1")] = nodeScanf;
-    nodePrintf->lineno = -1;
-    nodePrintf->var_name = "printf";
-    nodePrintf->var_scope = "1";
-    nodePrintf->type = new Type(COMPOSE_FUNCTION);
-    nodePrintf->type->retType = TYPE_VOID;
-    nodePrintf->type->paramType[nodePrintf->type->paramNum++] = TYPE_INT;
-    for (int i = 0; i < k;i++)
-        nodePrintf->type->paramType[nodePrintf->type->paramNum++] = TYPE_INT;
-    idNameList.insert(make_pair("printf", "1"));
-    idList[make_pair("printf", "1")] = nodePrintf;
 }

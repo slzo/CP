@@ -36,7 +36,7 @@ int main () {
         printf(i);
         i = i + 1;  
     }
-    int b[3][6];
+    int b[N][N*2];
     i = 1;
     j = i + i;
     b[0][0] = i + j * 2;

@@ -60,15 +60,15 @@ LINECOMMENT "//".*\n
 "return" return RETURN;
 
 "printf" {
-    nodePrintf->var_name = "printf";
-    nodePrintf->var_scope = "1";
-    yylval = nodePrintf;
+    Printf->var_name = "printf";
+    Printf->var_scope = "1";
+    yylval = Printf;
     return IDENTIFIER;
 };
 "scanf" {
-    nodeScanf->var_name = "scanf";
-    nodeScanf->var_scope = "1";
-    yylval = nodeScanf;
+    Scanf->var_name = "scanf";
+    Scanf->var_scope = "1";
+    yylval = Scanf;
     return IDENTIFIER;
 };
 
